@@ -1,9 +1,9 @@
 # Source: https://github.com/dotnet/dotnet-docker
 FROM mcr.microsoft.com/dotnet/runtime-deps:6.0-jammy as build
 
-ARG TARGETOS
-ARG TARGETARCH
-ARG RUNNER_VERSION
+ARG TARGETOS=linux
+ARG TARGETARCH=amd64
+ARG RUNNER_VERSION=2.315.0
 ARG RUNNER_CONTAINER_HOOKS_VERSION=0.6.0
 ARG DOCKER_VERSION=25.0.4
 ARG BUILDX_VERSION=0.13.1
@@ -14,6 +14,7 @@ WORKDIR /actions-runner
 RUN export RUNNER_ARCH=${TARGETARCH} \
     && if [ "$RUNNER_ARCH" = "amd64" ]; then export RUNNER_ARCH=x64 ; fi \
     && curl -f -L -o runner.tar.gz https://github.com/actions/runner/releases/download/v${RUNNER_VERSION}/actions-runner-${TARGETOS}-${RUNNER_ARCH}-${RUNNER_VERSION}.tar.gz \
+#    && curl -f -L -o runner.tar.gz  https://github.com/actions/runner/releases/download/v2.315.0/actions-runner-linux-x64-2.315.0.tar.gz \
     && tar xzf ./runner.tar.gz \
     && rm runner.tar.gz
 
@@ -32,17 +33,27 @@ RUN export RUNNER_ARCH=${TARGETARCH} \
         "https://github.com/docker/buildx/releases/download/v${BUILDX_VERSION}/buildx-v${BUILDX_VERSION}.linux-${TARGETARCH}" \
     && chmod +x /usr/local/lib/docker/cli-plugins/docker-buildx
 
-FROM mcr.microsoft.com/dotnet/runtime-deps:6.0-jammy
+FROM nvidia/cuda:12.2.0-devel-ubuntu22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV RUNNER_MANUALLY_TRAP_SIG=1
 ENV ACTIONS_RUNNER_PRINT_LOG_TO_STDOUT=1
-ENV ImageOS=ubuntu22
+ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update -y \
+RUN apt-get update \
+    # Install prerequisites
     && apt-get install -y --no-install-recommends \
-    sudo \
-    lsb-release \
+       wget \
+       ca-certificates \
+    # Install Microsoft package feed
+    && wget -q https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb \
+    && dpkg -i packages-microsoft-prod.deb \
+    && rm packages-microsoft-prod.deb \
+    # Install .NET
+    && apt-get update \
+    && apt-get install -y --no-install-recommends \
+        dotnet-runtime-6.0 \
+    # Cleanup
     && rm -rf /var/lib/apt/lists/*
 
 RUN adduser --disabled-password --gecos "" --uid 1001 runner \
