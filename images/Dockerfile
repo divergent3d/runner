@@ -45,6 +45,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
        wget \
        ca-certificates \
+       nvidia-container-toolkit \
     # Install Microsoft package feed
     && wget -q https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb \
     && dpkg -i packages-microsoft-prod.deb \
@@ -54,7 +55,9 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         dotnet-runtime-6.0 \
     # Cleanup
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && nvidia-ctk runtime configure --runtime=docker
+
 
 RUN adduser --disabled-password --gecos "" --uid 1001 runner \
     && groupadd docker --gid 123 \
