@@ -1,5 +1,5 @@
 # Source: https://github.com/dotnet/dotnet-docker
-FROM mcr.microsoft.com/dotnet/runtime-deps:6.0-jammy as build
+FROM mcr.microsoft.com/dotnet/runtime-deps:6.0-jammy AS build
 
 ARG TARGETOS=linux
 ARG TARGETARCH=amd64
@@ -8,13 +8,14 @@ ARG RUNNER_CONTAINER_HOOKS_VERSION=0.6.0
 ARG DOCKER_VERSION=25.0.4
 ARG BUILDX_VERSION=0.13.1
 
-RUN apt update -y && apt install curl unzip -y
+RUN apt-get update -y \
+    && apt-get install -y curl unzip sudo gettext-base \
+    && apt-get clean
 
 WORKDIR /actions-runner
 RUN export RUNNER_ARCH=${TARGETARCH} \
     && if [ "$RUNNER_ARCH" = "amd64" ]; then export RUNNER_ARCH=x64 ; fi \
     && curl -f -L -o runner.tar.gz https://github.com/actions/runner/releases/download/v${RUNNER_VERSION}/actions-runner-${TARGETOS}-${RUNNER_ARCH}-${RUNNER_VERSION}.tar.gz \
-#    && curl -f -L -o runner.tar.gz  https://github.com/actions/runner/releases/download/v2.315.0/actions-runner-linux-x64-2.315.0.tar.gz \
     && tar xzf ./runner.tar.gz \
     && rm runner.tar.gz
 
@@ -32,6 +33,7 @@ RUN export RUNNER_ARCH=${TARGETARCH} \
     && curl -fLo /usr/local/lib/docker/cli-plugins/docker-buildx \
         "https://github.com/docker/buildx/releases/download/v${BUILDX_VERSION}/buildx-v${BUILDX_VERSION}.linux-${TARGETARCH}" \
     && chmod +x /usr/local/lib/docker/cli-plugins/docker-buildx
+
 
 FROM nvidia/cuda:12.2.0-devel-ubuntu22.04
 
@@ -58,6 +60,9 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/* \
     && nvidia-ctk runtime configure --runtime=docker
 
+RUN apt-get update -y \
+    && apt-get install -y curl unzip sudo gettext-base \
+    && apt-get clean
 
 RUN adduser --disabled-password --gecos "" --uid 1001 runner \
     && groupadd docker --gid 123 \
