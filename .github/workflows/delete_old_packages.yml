@@ -12,4 +12,4 @@ jobs:
         package-name: 'cuda-actions-runner'
         package-type: 'container'
         min-versions-to-keep: 5
-        token: ${{ secrets.API_TOKEN_GITHUB_PACKAGES }}
+        token: ${{ secrets.PUBLISH_PACKAGE_TOKEN }}
